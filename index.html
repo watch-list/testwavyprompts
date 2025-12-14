@@ -41,13 +41,13 @@
       }
 
       html {
-        scroll-behavior: smooth;
+        scroll-behavior: auto; /* Let Lenis handle scrolling */
         height: 100%;
       }
 
       body {
         font-family: 'Poppins', sans-serif;
-        background-color: #0A0A0A;
+        background-color: #020202; /* Darker background */
         color: #ffffff;
         font-weight: 400;
         margin: 0;
@@ -95,19 +95,19 @@
         scrollbar-width: none;
       }
 
-      /* Refined Scrollbar for Y2K Aesthetic */
+      /* Refined Scrollbar for Y2K Aesthetic - Optional with Lenis but good fallback */
       ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
       }
       ::-webkit-scrollbar-track {
-        background: #0A0A0A;
+        background: #020202;
         border-left: 1px solid rgba(255,255,255,0.05);
       }
       ::-webkit-scrollbar-thumb {
         background: #333; 
         border-radius: 99px;
-        border: 2px solid #0A0A0A;
+        border: 2px solid #020202;
         transition: background 0.3s ease;
       }
       ::-webkit-scrollbar-thumb:hover {
@@ -158,8 +158,8 @@
         Copy, Share2, Plus, X, ChevronLeft, Image as ImageIcon, 
         MoreHorizontal, Check, Pencil, Search, Sparkles 
       } from "https://esm.sh/lucide-react@0.263.1";
-      // Import Lenis for smooth scrolling
-      import Lenis from "https://esm.sh/@studio-freight/lenis@1.0.29";
+      // Import Lenis (New Package Name)
+      import Lenis from "https://esm.sh/lenis@1.1.14";
 
       const STORAGE_KEY = 'promptvault_items';
 
@@ -309,7 +309,7 @@
             {/* Content Section */}
             <div className="flex flex-col gap-2">
               {/* Title - Smaller Size as requested */}
-              <h3 className="text-xl md:text-2xl font-extrabold font-display text-white tracking-tight truncate px-1">{data.title}</h3>
+              <h3 className="text-lg md:text-xl font-extrabold font-display text-white tracking-tight truncate px-1">{data.title}</h3>
               
               {/* Footer Row: Glassmorphism layout */}
               <div className="flex items-center justify-between gap-3 px-1 w-full">
@@ -511,6 +511,7 @@
         const [logoError, setLogoError] = useState(false);
 
         useEffect(() => {
+          console.log("Initializing Lenis...");
           // Initialize Lenis for smooth scrolling
           const lenis = new Lenis({
             duration: 1.2,
@@ -529,6 +530,7 @@
           }
 
           requestAnimationFrame(raf);
+          console.log("Lenis initialized.");
 
           return () => {
             lenis.destroy();
@@ -578,12 +580,12 @@
 
         return (
           <div className="min-h-screen relative text-white selection:bg-[#5C5CFF] selection:text-white overflow-x-hidden">
-            <div className="fixed inset-0 z-[-1] pointer-events-none bg-[#0A0A0A] overflow-hidden">
-              <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] rounded-full bg-[#5C5CFF]/5 blur-[120px] animate-pulse" style={{animationDuration: '8s'}}></div>
-              <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] rounded-full bg-purple-600/5 blur-[120px] animate-pulse" style={{animationDuration: '10s'}}></div>
+            <div className="fixed inset-0 z-[-1] pointer-events-none bg-[#020202] overflow-hidden">
+              <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] rounded-full bg-[#5C5CFF]/3 blur-[120px] animate-pulse" style={{animationDuration: '8s'}}></div>
+              <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] rounded-full bg-purple-600/3 blur-[120px] animate-pulse" style={{animationDuration: '10s'}}></div>
             </div>
 
-            <header className="fixed top-0 left-0 right-0 z-30 px-4 md:px-6 py-4 md:py-6 bg-gradient-to-b from-[#0A0A0A] via-[#0A0A0A]/95 to-transparent pointer-events-none transition-all duration-300">
+            <header className="fixed top-0 left-0 right-0 z-30 px-4 md:px-6 py-4 md:py-6 bg-gradient-to-b from-[#020202] via-[#020202]/95 to-transparent pointer-events-none transition-all duration-300">
               <div className="flex items-center justify-between pointer-events-auto max-w-7xl mx-auto w-full">
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-[#5C5CFF]/20 to-purple-500/20 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-[0_0_15px_rgba(92,92,255,0.3)] overflow-hidden">
