@@ -42,13 +42,12 @@
 
       html {
         scroll-behavior: smooth;
+        height: 100%;
       }
 
       body {
         font-family: 'Poppins', sans-serif;
-        background-color: #000000;
-        background-image: linear-gradient(to bottom, #181818, #000000);
-        background-attachment: fixed;
+        background-color: #0A0A0A;
         color: #ffffff;
         font-weight: 400;
         margin: 0;
@@ -96,16 +95,20 @@
         scrollbar-width: none;
       }
 
+      /* Refined Scrollbar for Y2K Aesthetic */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
       }
       ::-webkit-scrollbar-track {
-        background: #181818; 
+        background: #0A0A0A;
+        border-left: 1px solid rgba(255,255,255,0.05);
       }
       ::-webkit-scrollbar-thumb {
         background: #333; 
-        border-radius: 4px;
+        border-radius: 99px;
+        border: 2px solid #0A0A0A;
+        transition: background 0.3s ease;
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #5C5CFF; 
@@ -126,6 +129,23 @@
       .animate-text-reveal {
         animation: text-reveal 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
       }
+      
+      /* Lenis Recommended CSS */
+      html.lenis, html.lenis body {
+        height: auto;
+      }
+      .lenis.lenis-smooth {
+        scroll-behavior: auto !important;
+      }
+      .lenis.lenis-smooth [data-lenis-prevent] {
+        overscroll-behavior: contain;
+      }
+      .lenis.lenis-stopped {
+        overflow: hidden;
+      }
+      .lenis.lenis-scrolling iframe {
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
@@ -138,6 +158,8 @@
         Copy, Share2, Plus, X, ChevronLeft, Image as ImageIcon, 
         MoreHorizontal, Check, Pencil, Search, Sparkles 
       } from "https://esm.sh/lucide-react@0.263.1";
+      // Import Lenis for smooth scrolling
+      import Lenis from "https://esm.sh/@studio-freight/lenis@1.0.29";
 
       const STORAGE_KEY = 'promptvault_items';
 
@@ -221,7 +243,7 @@
         );
       };
 
-      // Updated PromptCard Component - Text Removed from Buttons
+      // Updated PromptCard Component - Smaller Title and Category Tag
       const PromptCard = ({ data, onClick, onEdit }) => {
         const [copied, setCopied] = useState(false);
         const category = data.category || 'NanoBanana';
@@ -286,15 +308,15 @@
 
             {/* Content Section */}
             <div className="flex flex-col gap-2">
-              {/* Title - Bigger on Desktop */}
-              <h3 className="text-2xl md:text-3xl font-extrabold font-display text-white tracking-tight truncate px-1">{data.title}</h3>
+              {/* Title - Smaller Size as requested */}
+              <h3 className="text-xl md:text-2xl font-extrabold font-display text-white tracking-tight truncate px-1">{data.title}</h3>
               
               {/* Footer Row: Glassmorphism layout */}
               <div className="flex items-center justify-between gap-3 px-1 w-full">
                 
-                {/* Category Pill - Glass Element - Removed width restriction and truncate */}
-                <div className="glass-element flex items-center gap-2.5 px-3 py-2 md:px-4 md:py-2.5 rounded-full transition-all duration-300 hover:bg-white/10 border border-white/10">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getDotColor(category)}`}></div>
+                {/* Category Pill - Smaller padding and size */}
+                <div className="glass-element flex items-center gap-2 px-2.5 py-1.5 md:px-3 md:py-2 rounded-full transition-all duration-300 hover:bg-white/10 border border-white/10">
+                  <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full flex-shrink-0 ${getDotColor(category)}`}></div>
                   <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-white/90 font-display whitespace-nowrap">{category}</span>
                 </div>
 
@@ -489,6 +511,31 @@
         const [logoError, setLogoError] = useState(false);
 
         useEffect(() => {
+          // Initialize Lenis for smooth scrolling
+          const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            orientation: 'vertical',
+            gestureOrientation: 'vertical',
+            smoothWheel: true,
+            wheelMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
+          });
+
+          function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+          }
+
+          requestAnimationFrame(raf);
+
+          return () => {
+            lenis.destroy();
+          };
+        }, []);
+
+        useEffect(() => {
           const loadData = () => setPrompts(getPrompts());
           const handleHashChange = () => {
             const hash = window.location.hash;
@@ -531,12 +578,12 @@
 
         return (
           <div className="min-h-screen relative text-white selection:bg-[#5C5CFF] selection:text-white overflow-x-hidden">
-            <div className="fixed inset-0 z-[-1] pointer-events-none bg-gradient-to-b from-[#181818] to-black overflow-hidden">
+            <div className="fixed inset-0 z-[-1] pointer-events-none bg-[#0A0A0A] overflow-hidden">
               <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] rounded-full bg-[#5C5CFF]/5 blur-[120px] animate-pulse" style={{animationDuration: '8s'}}></div>
               <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] rounded-full bg-purple-600/5 blur-[120px] animate-pulse" style={{animationDuration: '10s'}}></div>
             </div>
 
-            <header className="fixed top-0 left-0 right-0 z-30 px-4 md:px-6 py-4 md:py-6 bg-gradient-to-b from-[#181818] via-[#181818]/95 to-transparent pointer-events-none transition-all duration-300">
+            <header className="fixed top-0 left-0 right-0 z-30 px-4 md:px-6 py-4 md:py-6 bg-gradient-to-b from-[#0A0A0A] via-[#0A0A0A]/95 to-transparent pointer-events-none transition-all duration-300">
               <div className="flex items-center justify-between pointer-events-auto max-w-7xl mx-auto w-full">
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-[#5C5CFF]/20 to-purple-500/20 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-[0_0_15px_rgba(92,92,255,0.3)] overflow-hidden">
