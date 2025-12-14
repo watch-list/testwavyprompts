@@ -8,6 +8,12 @@
     
     <!-- External Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FIX: Polyfill for process.env.NODE_ENV to prevent React crash -->
+    <script>
+      window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+
     <!-- Suppress Babel Warning -->
     <script>
       (function() {
