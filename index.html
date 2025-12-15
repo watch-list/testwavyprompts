@@ -157,17 +157,23 @@ create policy "Public Access" on public.prompts for all using (true) with check 
 grant all on table public.prompts to anon;
 grant all on table public.prompts to authenticated;
 
--- 2. FIX STORAGE (Fixes "Give access to a file..." errors)
+-- 2. FIX STORAGE (Fixes "Permission Denied" errors)
 insert into storage.buckets (id, name, public) values ('images', 'images', true)
 on conflict (id) do update set public = true;
 
 -- Remove conflicting policies
 drop policy if exists "Universal Public Images" on storage.objects;
+drop policy if exists "Give me access" on storage.objects;
+drop policy if exists "Public Access" on storage.objects;
+
 -- Create UNIVERSAL open policy
 create policy "Universal Public Images" on storage.objects for all 
 using ( bucket_id = 'images' ) 
 with check ( bucket_id = 'images' );
+
+-- Explicit grants
 grant all on table storage.objects to anon;
+grant all on table storage.objects to authenticated;
 `.trim();
 
       // --- TOAST CONTEXT ---
@@ -471,30 +477,24 @@ grant all on table storage.objects to anon;
           setIsSaving(true);
           
           try {
-            let finalImageUrl = imageUrl;
-            if (imageMode === 'upload' && selectedFile) {
-              finalImageUrl = await uploadImageToSupabase(selectedFile);
-            } else if (imageMode === 'upload' && !selectedFile && !initialData) {
-              finalImageUrl = 'https://picsum.photos/800/1000'; 
-            } else if (imageMode === 'upload' && !selectedFile && initialData) {
-              finalImageUrl = initialData.imageUrl;
-            }
-
-            const newPrompt = {
+            const baseData = {
               id: initialData ? initialData.id : Date.now().toString(),
               title,
               prompt,
-              imageUrl: finalImageUrl || 'https://picsum.photos/800/1000',
+              imageUrl: imageMode === 'link' ? imageUrl : (initialData?.imageUrl || 'https://picsum.photos/800/1000'),
               category,
               createdAt: initialData ? initialData.createdAt : Date.now()
             };
 
-            await onSave(newPrompt);
+            const fileToUpload = (imageMode === 'upload' && selectedFile) ? selectedFile : null;
+
+            await onSave(baseData, fileToUpload);
+            
             addToast(initialData ? "Vault entry updated!" : "Saved to Vault!");
             onClose();
           } catch (err) {
              console.error("Modal caught error:", err);
-             addToast(err.message || "Failed to save. Check console.", "error");
+             addToast(err.message || "Failed to save.", "error");
           } finally {
             setIsSaving(false);
           }
@@ -695,9 +695,30 @@ grant all on table storage.objects to anon;
           return () => lenis.destroy();
         }, []);
 
-        const handleSave = async (p) => { 
+        const handleSave = async (promptData, imageFile) => { 
           try {
-            await savePromptToSupabase(p); 
+            let finalImageUrl = promptData.imageUrl;
+            
+            // Handle Image Upload if file exists
+            if (imageFile) {
+                 try {
+                     finalImageUrl = await uploadImageToSupabase(imageFile);
+                 } catch (uploadErr) {
+                     const msg = (uploadErr.message || "").toLowerCase();
+                     if (msg.includes('storage permission') || msg.includes('row-level security') || msg.includes('403')) {
+                         setDbError("Storage Permissions Denied. Please run the repair script to fix your bucket policies.");
+                         throw new Error("Storage Permission Denied. Run the repair script.");
+                     }
+                     throw uploadErr;
+                 }
+            }
+
+            const payload = {
+                ...promptData,
+                imageUrl: finalImageUrl
+            };
+
+            await savePromptToSupabase(payload);
             const data = await fetchPrompts(); 
             setPrompts(data); 
           } catch (err) {
@@ -709,13 +730,10 @@ grant all on table storage.objects to anon;
               } else if (msg.includes('policy') || msg.includes('permission') || msg.includes('42501')) {
                 addToast("⚠️ DB Permission Error: RLS Policy violation.", 'error');
                 setDbError("Row-Level Security (RLS) Policy Violation. Please run the repair script.");
-              } else if (msg.includes('storage permission')) {
-                addToast("⚠️ Storage Error: " + msg, 'error');
-                setDbError("Storage Permissions Denied. Your bucket policies block anonymous uploads. Run the repair script.");
               } else {
-                addToast(`Error: ${msg}`, 'error');
+                // If it's the storage permission error we rethrew, it's already setDbError, but we might want to log it
               }
-              throw err; // Re-throw to stop the modal spinner
+              throw err; 
           }
         };
 
