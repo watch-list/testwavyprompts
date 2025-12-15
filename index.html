@@ -628,7 +628,7 @@ grant all on table storage.objects to authenticated;
                 ) : <div className="w-10 h-10"></div>}
              </div>
 
-             <div className="max-w-xl mx-auto px-4 pb-32 pt-6 flex flex-col items-center">
+             <div className="max-w-xl mx-auto px-4 pb-32 pt-6 flex flex-col items-center w-full">
                 
                 {/* Main Image */}
                 <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden bg-[#111] border border-white/10 shadow-2xl mb-8">
@@ -636,9 +636,9 @@ grant all on table storage.objects to authenticated;
                 </div>
 
                 {/* Content Container */}
-                <div className="w-full flex flex-col gap-5 px-1">
+                <div className="w-full flex flex-col gap-5 px-1 min-w-0">
                    {/* Title */}
-                   <h1 className="text-3xl md:text-4xl font-black font-display text-white leading-tight tracking-tight text-left">{data.title}</h1>
+                   <h1 className="text-3xl md:text-4xl font-black font-display text-white leading-tight tracking-tight text-left break-all">{data.title}</h1>
                    
                    {/* Meta Tags */}
                    <div className="flex flex-wrap items-center gap-3">
@@ -649,7 +649,7 @@ grant all on table storage.objects to authenticated;
                    </div>
 
                    {/* Prompt Box */}
-                   <div className="w-full bg-[#161616] border border-white/10 rounded-2xl p-5 md:p-6 mt-2 relative">
+                   <div className="w-full bg-[#161616] border border-white/10 rounded-2xl p-5 md:p-6 mt-2 relative min-w-0 overflow-hidden">
                       <p className="text-sm md:text-base text-gray-300 font-medium leading-relaxed whitespace-pre-wrap select-text break-all">
                         {data.prompt}
                       </p>
