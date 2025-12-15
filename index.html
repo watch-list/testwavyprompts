@@ -650,7 +650,7 @@ grant all on table storage.objects to authenticated;
 
                    {/* Prompt Box */}
                    <div className="w-full bg-[#161616] border border-white/10 rounded-2xl p-5 md:p-6 mt-2 relative">
-                      <p className="text-sm md:text-base text-gray-300 font-medium leading-relaxed whitespace-pre-wrap select-text">
+                      <p className="text-sm md:text-base text-gray-300 font-medium leading-relaxed whitespace-pre-wrap select-text break-all">
                         {data.prompt}
                       </p>
                    </div>
@@ -671,13 +671,29 @@ grant all on table storage.objects to authenticated;
 
       // FIX: Moved MainApp logic outside of App to prevent infinite re-rendering (flickering)
       const MainApp = () => {
-        const [view, setView] = useState('gallery');
+        // Initialize state based on URL hash to prevent flash of homepage
+        const [sharedData, setSharedData] = useState(() => {
+          const hash = window.location.hash;
+          if (hash.startsWith('#/share/')) {
+            return decodeShareData(hash.split('#/share/')[1]);
+          }
+          return null;
+        });
+
+        const [view, setView] = useState(() => {
+          const hash = window.location.hash;
+          if (hash.startsWith('#/share/') && decodeShareData(hash.split('#/share/')[1])) {
+            return 'shared';
+          }
+          return 'gallery';
+        });
+
         const [prompts, setPrompts] = useState([]);
         const [loading, setLoading] = useState(true);
         const [error, setError] = useState(null);
         const [dbError, setDbError] = useState(null);
         const [selectedPrompt, setSelectedPrompt] = useState(null);
-        const [sharedData, setSharedData] = useState(null);
+        
         const [isAddModalOpen, setIsAddModalOpen] = useState(false);
         const [editingPrompt, setEditingPrompt] = useState(null);
         const [activeCategory, setActiveCategory] = useState('All');
@@ -713,6 +729,7 @@ grant all on table storage.objects to authenticated;
           const checkHash = (currentPrompts) => {
             const hash = window.location.hash;
             if (hash.startsWith('#/share/')) {
+              // Redundant if handled in initial state, but good for safety
               const decoded = decodeShareData(hash.split('#/share/')[1]);
               if (decoded) { setSharedData(decoded); setView('shared'); } 
             } else if (hash.startsWith('#/view/')) {
