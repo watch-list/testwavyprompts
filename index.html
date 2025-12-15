@@ -189,7 +189,7 @@ grant all on table storage.objects to anon;
         return (
           <ToastContext.Provider value={{ addToast }}>
             {children}
-            <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
+            <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none">
               {toasts.map(toast => (
                 <div 
                   key={toast.id} 
@@ -251,7 +251,6 @@ grant all on table storage.objects to anon;
 
       const checkDatabaseHealth = async () => {
         try {
-          // Try to select just the ID and CATEGORY from one row to see if columns exist
           const { data, error } = await supabase.from('prompts').select('id, category').limit(1);
           if (error) throw error;
           return { healthy: true };
@@ -333,7 +332,7 @@ grant all on table storage.objects to anon;
         };
 
         return (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
             <div className="glass-panel w-full max-w-2xl rounded-3xl p-6 md:p-8 relative animate-in fade-in zoom-in-95 duration-200 border border-red-500/30 shadow-[0_0_50px_-10px_rgba(239,68,68,0.2)]">
               <div className="flex items-center gap-4 mb-6">
@@ -468,6 +467,7 @@ grant all on table storage.objects to anon;
 
         const handleSubmit = async (e) => {
           e.preventDefault();
+          if (isSaving) return;
           setIsSaving(true);
           
           try {
@@ -493,25 +493,20 @@ grant all on table storage.objects to anon;
             addToast(initialData ? "Vault entry updated!" : "Saved to Vault!");
             onClose();
           } catch (err) {
-            // Error handling is mostly done in parent via onSave, but storage errors bubble up here
              console.error("Modal caught error:", err);
-             // Re-throw to be caught by the parent's handler or just handle UI reset
-             throw err;
+             addToast(err.message || "Failed to save. Check console.", "error");
           } finally {
             setIsSaving(false);
           }
         };
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
             <div data-lenis-prevent className="glass-panel w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 relative animate-in fade-in zoom-in-95 duration-200">
               <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors z-10"><X size={24} /></button>
               <h2 className="text-xl md:text-2xl font-bold font-display mb-6 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">{initialData ? 'Edit Prompt' : 'Add to Vault'}</h2>
-              <form onSubmit={(e) => handleSubmit(e).catch(err => {
-                   // This catch block ensures the spinner stops and error might be toasted by parent
-                   setIsSaving(false);
-              })} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2"><label className="text-sm text-white/60 font-medium ml-1">Title</label><input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Cyberpunk Cat" className="glass-input w-full rounded-xl px-4 py-3 focus:outline-none focus:border-[#5C5CFF]/50 transition-colors" /></div>
                 
                 <div className="space-y-2">
@@ -550,7 +545,7 @@ grant all on table storage.objects to anon;
         );
       };
 
-      const FullView = ({ data, isOwner, onBack }) => {
+      const FullView = ({ data, isOwner, onBack, onEdit }) => {
         const [copied, setCopied] = useState(false);
         const { addToast } = useToast();
 
@@ -578,7 +573,11 @@ grant all on table storage.objects to anon;
                   <ChevronLeft size={24} />
                 </button>
                 <div className="font-display font-black text-xl tracking-tight">WavyPrompts</div>
-                <div className="w-10"></div> {/* Spacer for alignment */}
+                {isOwner ? (
+                  <button onClick={onEdit} className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors">
+                    <Pencil size={20} />
+                  </button>
+                ) : <div className="w-10"></div>}
              </div>
 
              <div className="max-w-xl mx-auto px-4 pb-32 pt-6 flex flex-col items-center">
@@ -748,7 +747,7 @@ grant all on table storage.objects to anon;
             </div>
 
             {view === 'shared' && sharedData ? <FullView data={sharedData} isOwner={false} onBack={() => {}} /> : 
-              view === 'full' && selectedPrompt ? <><FullView data={selectedPrompt} isOwner={true} onBack={() => {window.location.hash=''; setView('gallery');}} /><AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} /></> : (
+              view === 'full' && selectedPrompt ? <><FullView data={selectedPrompt} isOwner={true} onBack={() => {window.location.hash=''; setView('gallery');}} onEdit={() => { setEditingPrompt(selectedPrompt); setIsAddModalOpen(true); }} /><AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} /></> : (
               <>
                 <header className="fixed top-0 left-0 right-0 z-30 px-6 py-6 bg-gradient-to-b from-[#020202] to-transparent pointer-events-none">
                   <div className="flex items-center justify-between pointer-events-auto max-w-7xl mx-auto w-full">
