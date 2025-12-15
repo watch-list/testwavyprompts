@@ -29,7 +29,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700;800&family=Unbounded:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700;800&family=Unbounded:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
       @font-face {
@@ -121,7 +121,7 @@
       import { 
         Copy, Share2, Plus, X, ChevronLeft, Image as ImageIcon, 
         MoreHorizontal, Check, Pencil, Search, Sparkles, Loader2, AlertTriangle, Trash2, Upload, Link as LinkIcon, Info, XCircle, CheckCircle2,
-        Database, Terminal
+        Database, Terminal, Calendar
       } from "https://esm.sh/lucide-react@0.263.1";
       // Import Lenis (New Package Name)
       import Lenis from "https://esm.sh/lenis@1.1.14";
@@ -134,9 +134,8 @@
       const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
       // --- SQL FIX SCRIPT ---
-      // This is displayed to the user if the DB is broken
       const REPAIR_SQL = `
--- Run this in your Supabase SQL Editor to fix everything
+-- 1. RESET PROMPTS TABLE
 create table if not exists public.prompts (
     id text primary key,
     title text,
@@ -146,26 +145,29 @@ create table if not exists public.prompts (
     created_at timestamptz default now()
 );
 
--- Ensure columns exist (idempotent)
+-- Ensure columns exist
 alter table public.prompts add column if not exists category text default 'NanoBanana';
 alter table public.prompts add column if not exists created_at timestamptz default now();
 
--- Enable security
+-- Fix Table Permissions (RLS)
 alter table public.prompts enable row level security;
-
--- Allow access
-create policy "Enable all access" on public.prompts for all using (true) with check (true);
+drop policy if exists "Enable all access" on public.prompts;
+drop policy if exists "Public Access" on public.prompts;
+create policy "Public Access" on public.prompts for all using (true) with check (true);
 grant all on table public.prompts to anon;
 grant all on table public.prompts to authenticated;
 
--- Storage setup
+-- 2. FIX STORAGE (Fixes "Give access to a file..." errors)
 insert into storage.buckets (id, name, public) values ('images', 'images', true)
-on conflict (id) do nothing;
+on conflict (id) do update set public = true;
 
-create policy "Public Access" on storage.objects for all using ( bucket_id = 'images' );
-insert into storage.policies (name, definition, bucket_id)
-values ('Public Access', 'bucket_id = ''images''', 'images')
-on conflict (name, bucket_id) do nothing;
+-- Remove conflicting policies
+drop policy if exists "Universal Public Images" on storage.objects;
+-- Create UNIVERSAL open policy
+create policy "Universal Public Images" on storage.objects for all 
+using ( bucket_id = 'images' ) 
+with check ( bucket_id = 'images' );
+grant all on table storage.objects to anon;
 `.trim();
 
       // --- TOAST CONTEXT ---
@@ -267,7 +269,13 @@ on conflict (name, bucket_id) do nothing;
           .from('images')
           .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Storage upload error:", uploadError);
+          if (uploadError.statusCode === '403' || uploadError.error === 'Unauthorized' || uploadError.message.includes('row-level security')) {
+            throw new Error("Storage Permission Denied. Run the repair script.");
+          }
+          throw uploadError;
+        }
 
         const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(filePath);
         return publicUrlData.publicUrl;
@@ -332,7 +340,7 @@ on conflict (name, bucket_id) do nothing;
                 <div className="p-3 rounded-full bg-red-500/20 text-red-400"><Database size={24} /></div>
                 <div>
                   <h2 className="text-xl font-bold font-display text-white">Database Setup Required</h2>
-                  <p className="text-red-300 text-sm">Missing columns detected in Supabase</p>
+                  <p className="text-red-300 text-sm">Permission or Schema error detected in Supabase</p>
                 </div>
               </div>
               
@@ -354,7 +362,7 @@ on conflict (name, bucket_id) do nothing;
               </div>
 
               <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={onClose}>Ignore (App may crash)</Button>
+                <Button variant="ghost" onClick={onClose}>Ignore</Button>
                 <Button onClick={() => window.location.reload()} variant="primary">I've Run It, Reload App</Button>
               </div>
             </div>
@@ -485,13 +493,10 @@ on conflict (name, bucket_id) do nothing;
             addToast(initialData ? "Vault entry updated!" : "Saved to Vault!");
             onClose();
           } catch (err) {
-            console.error(err);
-            const msg = (err.message || "Unknown error").toLowerCase();
-            if (msg.includes('column') || msg.includes('does not exist') || msg.includes('42703')) {
-               addToast("⚠️ DB Schema Error: Columns missing. Refresh app to see repair tool.", 'error');
-            } else {
-               addToast(`Error: ${msg}`, 'error');
-            }
+            // Error handling is mostly done in parent via onSave, but storage errors bubble up here
+             console.error("Modal caught error:", err);
+             // Re-throw to be caught by the parent's handler or just handle UI reset
+             throw err;
           } finally {
             setIsSaving(false);
           }
@@ -503,7 +508,10 @@ on conflict (name, bucket_id) do nothing;
             <div data-lenis-prevent className="glass-panel w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 relative animate-in fade-in zoom-in-95 duration-200">
               <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors z-10"><X size={24} /></button>
               <h2 className="text-xl md:text-2xl font-bold font-display mb-6 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">{initialData ? 'Edit Prompt' : 'Add to Vault'}</h2>
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={(e) => handleSubmit(e).catch(err => {
+                   // This catch block ensures the spinner stops and error might be toasted by parent
+                   setIsSaving(false);
+              })} className="space-y-5">
                 <div className="space-y-2"><label className="text-sm text-white/60 font-medium ml-1">Title</label><input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Cyberpunk Cat" className="glass-input w-full rounded-xl px-4 py-3 focus:outline-none focus:border-[#5C5CFF]/50 transition-colors" /></div>
                 
                 <div className="space-y-2">
@@ -533,7 +541,7 @@ on conflict (name, bucket_id) do nothing;
                 <div className="space-y-2"><label className="text-sm text-white/60 font-medium ml-1">Prompt</label><textarea required value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5} className="glass-input w-full rounded-xl px-4 py-3 focus:outline-none focus:border-[#5C5CFF]/50 resize-none" /></div>
                 
                 <div className="flex gap-3 mt-4">
-                  {initialData && <Button type="button" variant="danger" onClick={async () => { if(confirm('Delete?')) { setIsDeleting(true); await onDelete(initialData.id); onClose(); } }} disabled={isDeleting} className="w-12 px-0"><Trash2 size={20} /></Button>}
+                  {initialData && <Button type="button" variant="danger" onClick={async () => { if(confirm('Delete?')) { setIsDeleting(true); await onDelete(initialData.id).catch(() => {}); onClose(); } }} disabled={isDeleting} className="w-12 px-0"><Trash2 size={20} /></Button>}
                   <Button type="submit" fullWidth disabled={isSaving}>{isSaving ? <Loader2 className="animate-spin" /> : 'Save to Vault'}</Button>
                 </div>
               </form>
@@ -553,25 +561,80 @@ on conflict (name, bucket_id) do nothing;
           setTimeout(() => setCopied(false), 2000);
         };
 
+        const handleShare = () => {
+          const encoded = encodeShareData(data);
+          if (!encoded) return;
+          const url = `${window.location.origin}${window.location.pathname}#/share/${encoded}`;
+          navigator.clipboard.writeText(url).then(() => {
+            addToast("Share link copied!");
+          });
+        };
+
         return (
-          <div className="min-h-screen relative bg-black/90 text-white pb-20">
-            <div className="fixed inset-0 z-0 pointer-events-none"><img src={data.imageUrl} className="w-full h-full object-cover opacity-30 blur-[60px] animate-breathe" /></div>
-            <div className="relative z-10 flex flex-col items-center justify-center p-4 min-h-screen">
-              {isOwner && <button onClick={onBack} className="fixed top-6 left-6 z-50 p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10"><ChevronLeft size={20} /></button>}
-              <div className="w-full max-w-[450px] animate-in fade-in slide-in-from-bottom-8 duration-500">
-                <h1 className="text-3xl font-bold font-display text-center mb-6">{data.title}</h1>
-                <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden shadow-2xl border border-white/10 mb-6 bg-[#111]"><img src={data.imageUrl} className="w-full h-full object-cover" /></div>
-                <div className="relative glass-panel rounded-3xl p-6 mb-8 border border-white/10 bg-[#161616]/80 backdrop-blur-xl">
-                  <div className="max-h-[200px] overflow-y-auto no-scrollbar text-sm leading-relaxed text-gray-300 font-medium whitespace-pre-wrap">{data.prompt}</div>
+          <div className="fixed inset-0 z-[100] bg-black text-white overflow-y-auto">
+             {/* Sticky Header */}
+             <div className="sticky top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md px-4 py-4 md:px-6 flex items-center justify-between border-b border-white/5">
+                <button onClick={onBack} className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+                  <ChevronLeft size={24} />
+                </button>
+                <div className="font-display font-black text-xl tracking-tight">WavyPrompts</div>
+                <div className="w-10"></div> {/* Spacer for alignment */}
+             </div>
+
+             <div className="max-w-xl mx-auto px-4 pb-32 pt-6 flex flex-col items-center">
+                
+                {/* Main Image */}
+                <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden bg-[#111] border border-white/10 shadow-2xl mb-8">
+                  <img src={data.imageUrl} className="w-full h-full object-cover" />
                 </div>
-                <Button onClick={handleCopy} fullWidth className="h-14 text-base font-bold shadow-lg shadow-[#5C5CFF]/20">{copied ? 'Copied!' : 'Copy Prompt'}</Button>
-              </div>
-            </div>
+
+                {/* Content Container */}
+                <div className="w-full flex flex-col gap-5 px-1">
+                   {/* Title */}
+                   <h1 className="text-3xl md:text-4xl font-black font-display text-white leading-tight tracking-tight text-left">{data.title}</h1>
+                   
+                   {/* Meta Tags */}
+                   <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-xs font-bold border border-white/5 text-white/90">
+                         <Sparkles size={12} className="text-[#5C5CFF]" />
+                         <span>{data.category || 'NanoBanana'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-xs font-bold border border-white/5 text-white/90">
+                         <Calendar size={12} />
+                         <span>{new Date(data.createdAt).toLocaleDateString()}</span>
+                      </div>
+                   </div>
+
+                   {/* Prompt Box */}
+                   <div className="w-full bg-[#161616] border border-white/10 rounded-2xl p-5 md:p-6 mt-2 relative">
+                      <div className="absolute top-4 right-4 text-white/20">
+                         <Info size={16} />
+                      </div>
+                      <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Generation Prompt</h3>
+                      <p className="text-sm md:text-base text-gray-300 font-medium leading-relaxed whitespace-pre-wrap select-text">
+                        {data.prompt}
+                      </p>
+                   </div>
+                </div>
+             </div>
+
+             {/* Sticky Action Footer */}
+             <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black to-transparent z-50">
+                <div className="max-w-xl mx-auto flex gap-4">
+                   <Button onClick={handleCopy} fullWidth variant="primary" className="h-14 text-base font-bold shadow-lg shadow-[#5C5CFF]/30 rounded-full hover:scale-[1.02] active:scale-95 transition-transform">
+                      {copied ? 'Copied!' : 'Copy prompt'}
+                   </Button>
+                   <Button onClick={handleShare} fullWidth variant="secondary" className="h-14 text-base font-bold rounded-full hover:scale-[1.02] active:scale-95 transition-transform">
+                      Share style
+                   </Button>
+                </div>
+             </div>
           </div>
         );
       };
 
-      const App = () => {
+      // FIX: Moved MainApp logic outside of App to prevent infinite re-rendering (flickering)
+      const MainApp = () => {
         const [view, setView] = useState('gallery');
         const [prompts, setPrompts] = useState([]);
         const [loading, setLoading] = useState(true);
@@ -583,6 +646,8 @@ on conflict (name, bucket_id) do nothing;
         const [editingPrompt, setEditingPrompt] = useState(null);
         const [activeCategory, setActiveCategory] = useState('All');
         const [searchQuery, setSearchQuery] = useState('');
+        
+        const { addToast } = useToast();
 
         useEffect(() => {
           const init = async () => {
@@ -591,7 +656,7 @@ on conflict (name, bucket_id) do nothing;
             // Check DB Health First
             const health = await checkDatabaseHealth();
             if (!health.healthy) {
-              setDbError(health.error); // This triggers the Repair Modal
+              setDbError(health.error); 
             }
 
             try {
@@ -600,7 +665,6 @@ on conflict (name, bucket_id) do nothing;
               checkHash(data);
             } catch (err) {
               if (!health.healthy) {
-                // If health check failed, we know why fetch failed
                 console.warn("Fetch failed due to DB schema");
               } else {
                 setError(err.message);
@@ -633,79 +697,113 @@ on conflict (name, bucket_id) do nothing;
         }, []);
 
         const handleSave = async (p) => { 
-          await savePromptToSupabase(p); 
-          const data = await fetchPrompts(); 
-          setPrompts(data); 
+          try {
+            await savePromptToSupabase(p); 
+            const data = await fetchPrompts(); 
+            setPrompts(data); 
+          } catch (err) {
+              console.error(err);
+              const msg = (err.message || "Unknown error").toLowerCase();
+              if (msg.includes('column') || msg.includes('does not exist') || msg.includes('42703')) {
+                addToast("⚠️ DB Schema Error: Columns missing.", 'error');
+                setDbError(err.message);
+              } else if (msg.includes('policy') || msg.includes('permission') || msg.includes('42501')) {
+                addToast("⚠️ DB Permission Error: RLS Policy violation.", 'error');
+                setDbError("Row-Level Security (RLS) Policy Violation. Please run the repair script.");
+              } else if (msg.includes('storage permission')) {
+                addToast("⚠️ Storage Error: " + msg, 'error');
+                setDbError("Storage Permissions Denied. Your bucket policies block anonymous uploads. Run the repair script.");
+              } else {
+                addToast(`Error: ${msg}`, 'error');
+              }
+              throw err; // Re-throw to stop the modal spinner
+          }
         };
+
         const handleDelete = async (id) => { 
-          await deletePromptFromSupabase(id); 
-          const data = await fetchPrompts(); 
-          setPrompts(data); 
+          try {
+              await deletePromptFromSupabase(id); 
+              const data = await fetchPrompts(); 
+              setPrompts(data); 
+          } catch (err) {
+              console.error(err);
+              const msg = (err.message || "Unknown error").toLowerCase();
+              if (msg.includes('policy') || msg.includes('permission') || msg.includes('42501')) {
+                setDbError("Row-Level Security (RLS) Policy Violation. Please run the repair script.");
+              }
+              throw err;
+          }
         };
 
         const filtered = prompts.filter(p => (activeCategory === 'All' || (p.category || 'NanoBanana') === activeCategory) && (p.title.toLowerCase().includes(searchQuery.toLowerCase())));
 
         return (
-          <ToastProvider>
-            <div className="min-h-screen relative text-white selection:bg-[#5C5CFF] selection:text-white">
-              {/* Database Repair Modal */}
-              <RepairModal isOpen={!!dbError} onClose={() => setDbError(null)} errorMsg={dbError} />
+          <div className="min-h-screen relative text-white selection:bg-[#5C5CFF] selection:text-white">
+            {/* Database Repair Modal */}
+            <RepairModal isOpen={!!dbError} onClose={() => setDbError(null)} errorMsg={dbError} />
 
-              <div className="fixed inset-0 z-[-1] bg-[#020202]">
-                <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-[#5C5CFF]/3 blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] bg-purple-600/3 blur-[120px] animate-pulse" />
-              </div>
-
-              {view === 'shared' && sharedData ? <FullView data={sharedData} isOwner={false} onBack={() => {}} /> : 
-               view === 'full' && selectedPrompt ? <><FullView data={selectedPrompt} isOwner={true} onBack={() => {window.location.hash=''; setView('gallery');}} /><AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} /></> : (
-                <>
-                  <header className="fixed top-0 left-0 right-0 z-30 px-6 py-6 bg-gradient-to-b from-[#020202] to-transparent pointer-events-none">
-                    <div className="flex items-center justify-between pointer-events-auto max-w-7xl mx-auto w-full">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5C5CFF]/20 to-purple-500/20 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-[0_0_15px_rgba(92,92,255,0.3)]">
-                           <Sparkles size={18} className="text-[#5C5CFF]" fill="currentColor" fillOpacity={0.2} />
-                        </div>
-                        <h1 className="text-2xl font-bold font-display tracking-tighter">Wavy<span className="text-[#5C5CFF]">Prompts</span></h1>
-                      </div>
-                      <button onClick={() => { setEditingPrompt(null); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-[#5C5CFF] hover:text-white transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)] active:scale-95">
-                        <Plus size={14} strokeWidth={3} /><span>Add Prompt</span>
-                      </button>
-                    </div>
-                  </header>
-
-                  <main className="pt-28 pb-20 px-6 z-10 relative max-w-7xl mx-auto">
-                    <div className="flex flex-col-reverse md:flex-row md:items-center justify-between gap-6 mb-10">
-                      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
-                        {['All', 'NanoBanana', 'Midjourney', 'Seedream'].map((cat) => {
-                          const isSelected = activeCategory === cat;
-                          let activeStyle = isSelected ? (cat === 'NanoBanana' ? "bg-yellow-400 text-black" : cat === 'Midjourney' ? "bg-blue-400 text-black" : cat === 'Seedream' ? "bg-green-400 text-black" : "bg-white text-black") : 'bg-white/5 text-white/50 hover:bg-white/10';
-                          return <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all duration-300 flex-shrink-0 ${activeStyle}`}>{cat}</button>;
-                        })}
-                      </div>
-                      <div className="relative w-full md:w-72 group">
-                        <Search size={16} className="absolute left-4 top-3 text-white/30 group-focus-within:text-[#5C5CFF] transition-colors" />
-                        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search prompts..." className="w-full bg-white/5 border border-white/10 text-white rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:bg-white/10 focus:border-[#5C5CFF]/50 transition-all" />
-                      </div>
-                    </div>
-
-                    {loading ? (
-                      <div className="flex flex-col items-center justify-center py-20"><Loader2 size={40} className="text-[#5C5CFF] animate-spin mb-4" /><p className="text-white/50 text-sm font-display tracking-widest uppercase">Syncing Vault...</p></div>
-                    ) : filtered.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6"><Plus size={28} className="text-white/20" /></div>
-                        <h2 className="text-xl font-display text-white/80 mb-2">Vault Empty</h2>
-                        <p className="text-white/40 max-w-xs mx-auto mb-8">Start your collection by adding your first AI generation prompt.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filtered.map((prompt) => (<PromptCard key={prompt.id} data={prompt} onClick={() => { window.location.hash = `#/view/${prompt.id}`; setSelectedPrompt(prompt); setView('full'); }} onEdit={() => { setEditingPrompt(prompt); setIsAddModalOpen(true); }} />))}
-                      </div>
-                    )}
-                  </main>
-                  <AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} />
-                </>
-              )}
+            <div className="fixed inset-0 z-[-1] bg-[#020202]">
+              <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-[#5C5CFF]/3 blur-[120px] animate-pulse" />
+              <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] bg-purple-600/3 blur-[120px] animate-pulse" />
             </div>
+
+            {view === 'shared' && sharedData ? <FullView data={sharedData} isOwner={false} onBack={() => {}} /> : 
+              view === 'full' && selectedPrompt ? <><FullView data={selectedPrompt} isOwner={true} onBack={() => {window.location.hash=''; setView('gallery');}} /><AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} /></> : (
+              <>
+                <header className="fixed top-0 left-0 right-0 z-30 px-6 py-6 bg-gradient-to-b from-[#020202] to-transparent pointer-events-none">
+                  <div className="flex items-center justify-between pointer-events-auto max-w-7xl mx-auto w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5C5CFF]/20 to-purple-500/20 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-[0_0_15px_rgba(92,92,255,0.3)]">
+                          <Sparkles size={18} className="text-[#5C5CFF]" fill="currentColor" fillOpacity={0.2} />
+                      </div>
+                      <h1 className="text-3xl font-black font-display tracking-tighter">Wavy<span className="text-[#5C5CFF]">Prompts</span></h1>
+                    </div>
+                    <button onClick={() => { setEditingPrompt(null); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-[#5C5CFF] hover:text-white transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)] active:scale-95">
+                      <Plus size={14} strokeWidth={3} /><span>Add Prompt</span>
+                    </button>
+                  </div>
+                </header>
+
+                <main className="pt-28 pb-20 px-6 z-10 relative max-w-7xl mx-auto">
+                  <div className="flex flex-col-reverse md:flex-row md:items-center justify-between gap-6 mb-10">
+                    <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
+                      {['All', 'NanoBanana', 'Midjourney', 'Seedream'].map((cat) => {
+                        const isSelected = activeCategory === cat;
+                        let activeStyle = isSelected ? (cat === 'NanoBanana' ? "bg-yellow-400 text-black" : cat === 'Midjourney' ? "bg-blue-400 text-black" : cat === 'Seedream' ? "bg-green-400 text-black" : "bg-white text-black") : 'bg-white/5 text-white/50 hover:bg-white/10';
+                        return <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all duration-300 flex-shrink-0 ${activeStyle}`}>{cat}</button>;
+                      })}
+                    </div>
+                    <div className="relative w-full md:w-72 group">
+                      <Search size={16} className="absolute left-4 top-3 text-white/30 group-focus-within:text-[#5C5CFF] transition-colors" />
+                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search prompts..." className="w-full bg-white/5 border border-white/10 text-white rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:bg-white/10 focus:border-[#5C5CFF]/50 transition-all" />
+                    </div>
+                  </div>
+
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20"><Loader2 size={40} className="text-[#5C5CFF] animate-spin mb-4" /><p className="text-white/50 text-sm font-display tracking-widest uppercase">Syncing Vault...</p></div>
+                  ) : filtered.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                      <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6"><Plus size={28} className="text-white/20" /></div>
+                      <h2 className="text-xl font-display text-white/80 mb-2">Vault Empty</h2>
+                      <p className="text-white/40 max-w-xs mx-auto mb-8">Start your collection by adding your first AI generation prompt.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {filtered.map((prompt) => (<PromptCard key={prompt.id} data={prompt} onClick={() => { window.location.hash = `#/view/${prompt.id}`; setSelectedPrompt(prompt); setView('full'); }} onEdit={() => { setEditingPrompt(prompt); setIsAddModalOpen(true); }} />))}
+                    </div>
+                  )}
+                </main>
+                <AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} />
+              </>
+            )}
+          </div>
+        );
+      };
+
+      const App = () => {
+        return (
+          <ToastProvider>
+            <MainApp />
           </ToastProvider>
         );
       };
