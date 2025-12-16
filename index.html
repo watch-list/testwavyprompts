@@ -471,12 +471,14 @@ grant all on table storage.objects to authenticated;
         const [previewUrl, setPreviewUrl] = useState('');
         const [category, setCategory] = useState('NanoBanana');
         const [isSaving, setIsSaving] = useState(false);
+        const [savingStatus, setSavingStatus] = useState('idle');
         const [isDeleting, setIsDeleting] = useState(false);
         const fileInputRef = useRef(null);
         const { addToast } = useToast();
 
         useEffect(() => {
           if (isOpen) {
+            setSavingStatus('idle');
             if (initialData) {
               setTitle(initialData.title);
               setPrompt(initialData.prompt);
@@ -510,6 +512,7 @@ grant all on table storage.objects to authenticated;
           e.preventDefault();
           if (isSaving) return;
           setIsSaving(true);
+          setSavingStatus('starting');
           
           try {
             const baseData = {
@@ -523,7 +526,7 @@ grant all on table storage.objects to authenticated;
 
             const fileToUpload = (imageMode === 'upload' && selectedFile) ? selectedFile : null;
 
-            await onSave(baseData, fileToUpload);
+            await onSave(baseData, fileToUpload, (status) => setSavingStatus(status));
             
             addToast(initialData ? "Vault entry updated!" : "Saved to Vault!");
             onClose();
@@ -532,6 +535,7 @@ grant all on table storage.objects to authenticated;
              addToast(err.message || "Failed to save.", "error");
           } finally {
             setIsSaving(false);
+            setSavingStatus('idle');
           }
         };
 
@@ -576,7 +580,19 @@ grant all on table storage.objects to authenticated;
                 
                 <div className="flex gap-3 mt-4">
                   {initialData && <Button type="button" variant="danger" onClick={async () => { if(confirm('Delete?')) { setIsDeleting(true); await onDelete(initialData.id).catch(() => {}); onClose(); } }} disabled={isDeleting} className="w-12 px-0"><Trash2 size={20} /></Button>}
-                  <Button type="submit" fullWidth disabled={isSaving}>{isSaving ? <Loader2 className="animate-spin" /> : 'Save to Vault'}</Button>
+                  <Button type="submit" fullWidth disabled={isSaving}>
+                    {isSaving ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="animate-spin" size={18} />
+                        <span>
+                           {savingStatus === 'uploading' && 'Uploading Image...'}
+                           {savingStatus === 'saving' && 'Saving Data...'}
+                           {savingStatus === 'syncing' && 'Syncing Vault...'}
+                           {savingStatus === 'starting' && 'Processing...'}
+                        </span>
+                      </div>
+                    ) : (initialData ? 'Update Vault' : 'Save to Vault')}
+                  </Button>
                 </div>
               </form>
             </div>
@@ -623,7 +639,7 @@ grant all on table storage.objects to authenticated;
                   </button>
                 ) : <div className="w-10 h-10"></div>}
                 
-                <div className="font-display font-extrabold text-xl tracking-tight">WavyPrompts</div>
+                <div className="font-extrabold text-xl tracking-tight" style={{ fontFamily: 'Unbounded, sans-serif' }}>WavyPrompts</div>
                 
                 {isOwner ? (
                   <button onClick={onEdit} className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors active:scale-95">
@@ -753,12 +769,13 @@ grant all on table storage.objects to authenticated;
           return () => lenis.destroy();
         }, []);
 
-        const handleSave = async (promptData, imageFile) => { 
+        const handleSave = async (promptData, imageFile, onStatusUpdate) => { 
           try {
             let finalImageUrl = promptData.imageUrl;
             
             // Handle Image Upload if file exists
             if (imageFile) {
+                 if (onStatusUpdate) onStatusUpdate('uploading');
                  try {
                      finalImageUrl = await uploadImageToSupabase(imageFile);
                  } catch (uploadErr) {
@@ -771,12 +788,15 @@ grant all on table storage.objects to authenticated;
                  }
             }
 
+            if (onStatusUpdate) onStatusUpdate('saving');
             const payload = {
                 ...promptData,
                 imageUrl: finalImageUrl
             };
 
             await savePromptToSupabase(payload);
+            
+            if (onStatusUpdate) onStatusUpdate('syncing');
             const data = await fetchPrompts(); 
             setPrompts(data); 
           } catch (err) {
@@ -831,10 +851,12 @@ grant all on table storage.objects to authenticated;
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5C5CFF]/20 to-purple-500/20 border border-white/10 flex items-center justify-center backdrop-blur-md shadow-[0_0_15px_rgba(92,92,255,0.3)]">
                           <Sparkles size={18} className="text-[#5C5CFF]" fill="currentColor" fillOpacity={0.2} />
                       </div>
-                      <h1 className="text-2xl md:text-3xl font-extrabold font-display tracking-tighter">Wavy<span className="text-[#5C5CFF]">Prompts</span></h1>
+                      <h1 className="text-2xl md:text-3xl font-extrabold tracking-tighter" style={{ fontFamily: 'Unbounded, sans-serif' }}>Wavy<span className="text-[#5C5CFF]">Prompts</span></h1>
                     </div>
                     <button onClick={() => { setEditingPrompt(null); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-[#5C5CFF] hover:text-white transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)] active:scale-95">
-                      <Plus size={14} strokeWidth={3} /><span className="hidden xs:inline">Add Prompt</span><span className="inline xs:hidden">Add</span>
+                      <Plus size={14} strokeWidth={3} />
+                      <span className="hidden md:inline">ADD PROMPT</span>
+                      <span className="md:hidden">ADD</span>
                     </button>
                   </div>
                 </header>
