@@ -240,7 +240,7 @@ grant all on table storage.objects to authenticated;
                       : 'bg-[#1a1a1a]/90 border-white/10 text-white'
                   }`}
                 >
-                  <div className={`shrink-0 ${toast.type === 'error' ? 'text-red-400' : 'text-[#326EC4]'}`}>
+                  <div className={`shrink-0 ${toast.type === 'error' ? 'text-red-400' : 'text-[#547EAE]'}`}>
                     {toast.type === 'error' ? <XCircle size={20} /> : <CheckCircle2 size={20} />}
                   </div>
                   <p className="text-sm font-medium leading-tight">{toast.message}</p>
@@ -353,7 +353,7 @@ grant all on table storage.objects to authenticated;
       const Button = ({ children, variant = 'primary', fullWidth = false, className = '', ...props }) => {
         const baseStyles = "inline-flex items-center justify-center transition-all duration-200 font-medium tracking-wide disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]";
         const variants = {
-          primary: "bg-[#326EC4] hover:bg-[#4a4aff] text-white rounded-full px-6 py-3 shadow-[0_0_20px_-5px_#326EC4]",
+          primary: "bg-[#547EAE] hover:bg-[#4a4aff] text-white rounded-full px-6 py-3 shadow-[0_0_20px_-5px_#547EAE]",
           secondary: "bg-white text-black hover:bg-gray-200 rounded-full px-6 py-3",
           ghost: "bg-transparent text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-2",
           icon: "bg-white/10 hover:bg-white/20 text-white rounded-full p-2 backdrop-blur-md",
@@ -389,7 +389,7 @@ grant all on table storage.objects to authenticated;
                 <code className="text-red-300 text-xs break-all">{errorMsg}</code>
               </div>
 
-              <p className="text-white/80 mb-4 text-sm">To fix this, copy the SQL code below and run it in your <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" className="text-[#326EC4] hover:underline font-bold">Supabase SQL Editor</a>.</p>
+              <p className="text-white/80 mb-4 text-sm">To fix this, copy the SQL code below and run it in your <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" className="text-[#547EAE] hover:underline font-bold">Supabase SQL Editor</a>.</p>
               
               <div className="relative group mb-6">
                 <pre className="bg-[#050505] p-4 rounded-xl text-xs text-gray-400 font-mono overflow-x-auto h-48 border border-white/10 shadow-inner">
@@ -550,7 +550,7 @@ grant all on table storage.objects to authenticated;
 
               <h2 className="text-xl md:text-2xl font-bold font-display mb-6 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">{initialData ? 'Edit Prompt' : 'Add to Vault'}</h2>
               <form onSubmit={handleSubmit} className="space-y-5 pb-safe-bottom">
-                <div className="space-y-2"><label className="text-sm text-white/60 font-medium ml-1">Title</label><input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Cyberpunk Cat" className="glass-input w-full rounded-xl px-4 py-3 focus:outline-none focus:border-[#326EC4]/50 transition-colors text-[16px] md:text-sm" /></div>
+                <div className="space-y-2"><label className="text-sm text-white/60 font-medium ml-1">Title</label><input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Cyberpunk Cat" className="glass-input w-full rounded-xl px-4 py-3 focus:outline-none focus:border-[#547EAE]/50 transition-colors text-[16px] md:text-sm" /></div>
                 
                 <div className="space-y-2">
                   <label className="text-sm text-white/60 font-medium ml-1">Category</label>
@@ -565,9 +565,9 @@ grant all on table storage.objects to authenticated;
 
                 <div className="space-y-3">
                   <label className="text-sm text-white/60 font-medium ml-1">Image (4:5)</label>
-                  <div className="flex gap-2 mb-2"><button type="button" onClick={() => setImageMode('upload')} className={`text-xs font-bold px-3 py-1.5 rounded-lg ${imageMode === 'upload' ? 'bg-[#326EC4] text-white' : 'text-white/50'}`}>Upload</button><button type="button" onClick={() => setImageMode('link')} className={`text-xs font-bold px-3 py-1.5 rounded-lg ${imageMode === 'link' ? 'bg-[#326EC4] text-white' : 'text-white/50'}`}>URL</button></div>
+                  <div className="flex gap-2 mb-2"><button type="button" onClick={() => setImageMode('upload')} className={`text-xs font-bold px-3 py-1.5 rounded-lg ${imageMode === 'upload' ? 'bg-[#547EAE] text-white' : 'text-white/50'}`}>Upload</button><button type="button" onClick={() => setImageMode('link')} className={`text-xs font-bold px-3 py-1.5 rounded-lg ${imageMode === 'link' ? 'bg-[#547EAE] text-white' : 'text-white/50'}`}>URL</button></div>
                   {imageMode === 'upload' ? (
-                     <div onClick={() => fileInputRef.current?.click()} className="group relative w-full aspect-[4/5] max-h-[200px] rounded-xl border-2 border-dashed border-white/10 hover:border-[#326EC4]/50 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden active:scale-[0.99] transition-transform">
+                     <div onClick={() => fileInputRef.current?.click()} className="group relative w-full aspect-[4/5] max-h-[200px] rounded-xl border-2 border-dashed border-white/10 hover:border-[#547EAE]/50 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden active:scale-[0.99] transition-transform">
                       {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover opacity-60" /> : <div className="flex flex-col items-center"><Upload size={24} /><span className="text-xs font-bold mt-2">Click to Upload</span></div>}
                       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                      </div>
@@ -576,7 +576,7 @@ grant all on table storage.objects to authenticated;
                   )}
                 </div>
 
-                <div className="space-y-2"><label className="text-sm text-white/60 font-medium ml-1">Prompt</label><textarea required value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5} className="glass-input w-full rounded-xl px-4 py-3 focus:outline-none focus:border-[#326EC4]/50 resize-none text-[16px] md:text-sm" /></div>
+                <div className="space-y-2"><label className="text-sm text-white/60 font-medium ml-1">Prompt</label><textarea required value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5} className="glass-input w-full rounded-xl px-4 py-3 focus:outline-none focus:border-[#547EAE]/50 resize-none text-[16px] md:text-sm" /></div>
                 
                 <div className="flex gap-3 mt-4">
                   {initialData && <Button type="button" variant="danger" onClick={async () => { if(confirm('Delete?')) { setIsDeleting(true); await onDelete(initialData.id).catch(() => {}); onClose(); } }} disabled={isDeleting} className="w-12 px-0"><Trash2 size={20} /></Button>}
@@ -680,7 +680,7 @@ grant all on table storage.objects to authenticated;
              {/* Sticky Action Footer */}
              <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black via-black to-transparent z-50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <div className="max-w-xl mx-auto flex gap-4">
-                   <Button onClick={handleCopy} fullWidth variant="primary" className="h-14 text-base font-bold shadow-lg shadow-[#326EC4]/30 rounded-full hover:scale-[1.02] active:scale-95 transition-transform">
+                   <Button onClick={handleCopy} fullWidth variant="primary" className="h-14 text-base font-bold shadow-lg shadow-[#547EAE]/30 rounded-full hover:scale-[1.02] active:scale-95 transition-transform">
                       {copied ? 'Copied!' : 'Copy prompt'}
                    </Button>
                 </div>
@@ -725,12 +725,12 @@ grant all on table storage.objects to authenticated;
 
         // Theme Configuration
         const themeColors = {
-          'All': '#326EC4', // Default/Home
+          'All': '#547EAE', // Default/Home
           'NanoBanana': '#FFD700', // Yellow
           'Midjourney': '#00BFFF', // Blue
           'Seedream': '#00FA9A' // Green
         };
-        const currentTheme = themeColors[activeCategory] || '#326EC4';
+        const currentTheme = themeColors[activeCategory] || '#547EAE';
 
         useEffect(() => {
           const init = async () => {
@@ -902,7 +902,7 @@ grant all on table storage.objects to authenticated;
 
                     {/* Right: Add Button */}
                     <div className="flex-1 flex items-center justify-end min-w-0">
-                      <button onClick={() => { setEditingPrompt(null); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-5 py-3 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-[#326EC4] hover:text-white transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] active:scale-95 active:bg-[#326EC4] active:text-white whitespace-nowrap" style={{ '--hover-color': currentTheme }}>
+                      <button onClick={() => { setEditingPrompt(null); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-5 py-3 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-[#547EAE] hover:text-white transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] active:scale-95 active:bg-[#547EAE] active:text-white whitespace-nowrap" style={{ '--hover-color': currentTheme }}>
                         <Plus size={16} strokeWidth={3} />
                         <span className="hidden md:inline">ADD PROMPT</span>
                         <span className="md:hidden">ADD</span>
