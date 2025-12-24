@@ -6,15 +6,12 @@
     <title>WavyPrompts</title>
     <link rel="icon" type="image/svg+xml" href="./logo.svg">
     
-    <!-- External Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- FIX: Polyfill for process.env.NODE_ENV to prevent React crash -->
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
     </script>
 
-    <!-- Suppress Babel Warning -->
     <script>
       (function() {
         const originalWarn = console.warn;
@@ -26,7 +23,6 @@
     </script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700;800&family=Unbounded:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -411,16 +407,16 @@ grant all on table storage.objects to authenticated;
                   ))}
               </div>
 
-              {/* Dark Gradient Overlay for Readability - Reduced darkness */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-[#020202]/60 to-black/10"></div>
+              {/* Dark Gradient Overlay for Readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
               
-              {/* Content */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-6 text-center">
-                   <h1 className="font-display font-black text-5xl md:text-7xl lg:text-8xl tracking-tighter leading-[0.85] text-white drop-shadow-2xl flex flex-col gap-0 md:gap-2">
+              {/* Content - MODIFIED: Left Aligned and Smaller Size */}
+              <div className="absolute inset-0 flex flex-col items-start justify-end z-10 p-8 pb-12 md:pb-16 text-left">
+                   <h1 className="font-display font-black text-3xl md:text-5xl tracking-tighter leading-[0.85] text-white drop-shadow-2xl flex flex-col gap-0 md:gap-1">
                       <span>STAY WAVY</span>
                       <span className="text-white/90">PROMPT SMARTER</span>
                    </h1>
-                   <p className="text-white/50 text-sm md:text-base font-medium max-w-md mt-6 md:mt-8 tracking-wide">
+                   <p className="text-white/50 text-[10px] md:text-xs font-medium max-w-xs mt-4 tracking-wide">
                       Discover and collect the best AI prompts in your personal vault.
                    </p>
               </div>
@@ -919,12 +915,12 @@ grant all on table storage.objects to authenticated;
             {/* Dynamic Background with Theme Color */}
             <div className="fixed inset-0 z-[-1] bg-[#020202] transition-colors duration-700">
               <div 
-                 className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out" 
-                 style={{ backgroundColor: currentTheme, opacity: 0.04 }}
+                   className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out" 
+                   style={{ backgroundColor: currentTheme, opacity: 0.04 }}
               />
               <div 
-                 className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out" 
-                 style={{ backgroundColor: currentTheme, opacity: 0.02 }}
+                   className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out" 
+                   style={{ backgroundColor: currentTheme, opacity: 0.02 }}
               />
             </div>
 
