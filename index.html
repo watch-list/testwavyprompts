@@ -145,6 +145,16 @@
       .animate-text-reveal {
         animation: text-reveal 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
       }
+
+      /* Marquee Animations for Hero Section */
+      @keyframes marquee-up {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-50%); }
+      }
+      @keyframes marquee-down {
+        0% { transform: translateY(-50%); }
+        100% { transform: translateY(0); }
+      }
     </style>
   </head>
   <body>
@@ -363,31 +373,40 @@ grant all on table storage.objects to authenticated;
       };
 
       const HeroSection = ({ prompts }) => {
-        // Fallback or use real images
-        const displayImages = prompts && prompts.length > 0
-          ? [...prompts, ...prompts, ...prompts].slice(0, 15) 
-          : Array(15).fill(null);
+        // Use real prompts or fallbacks. Ensure we have enough to fill columns nicely.
+        const pool = prompts && prompts.length > 0 ? prompts : Array.from({length: 12}).fill(null);
+        // Duplicate pool to ensure enough items for scrolling effect
+        const items = [...pool, ...pool, ...pool, ...pool].slice(0, 36); 
+        
+        // Create 6 columns
+        const cols = [[], [], [], [], [], []];
+        items.forEach((item, i) => {
+            cols[i % 6].push(item);
+        });
 
         return (
           <div className="relative w-full h-[400px] md:h-[480px] rounded-[32px] overflow-hidden mb-12 border border-white/10 shadow-2xl bg-[#0a0a0a] group">
-              {/* Background Grid - Tilted Masonry Effect */}
-              <div className="absolute inset-[-50px] opacity-40 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 transform -rotate-6 scale-110 pointer-events-none select-none">
-                  {displayImages.map((p, i) => (
-                      <div key={i} className="flex flex-col gap-4">
-                          <div className="w-full aspect-[4/5] rounded-xl bg-gray-800/50 overflow-hidden border border-white/5">
-                             <img 
-                                src={p ? p.imageUrl : `https://picsum.photos/seed/${i * 123}/400/500`} 
-                                className="w-full h-full object-cover opacity-60 grayscale group-hover:grayscale-0 transition-all duration-1000 ease-out" 
-                                loading="lazy"
-                             />
-                          </div>
-                          <div className="w-full aspect-[4/5] rounded-xl bg-gray-800/50 overflow-hidden border border-white/5 hidden md:block">
-                             <img 
-                                src={p ? (prompts[(i+1)%prompts.length]?.imageUrl) : `https://picsum.photos/seed/${i * 456}/400/500`} 
-                                className="w-full h-full object-cover opacity-60 grayscale group-hover:grayscale-0 transition-all duration-1000 ease-out delay-75" 
-                                loading="lazy"
-                             />
-                          </div>
+              {/* Background Columns - Tilted and Animated */}
+              <div className="absolute inset-[-100px] opacity-40 flex gap-4 justify-center items-start transform -rotate-6 scale-110 pointer-events-none select-none">
+                  {cols.map((colItems, colIndex) => (
+                      <div 
+                        key={colIndex} 
+                        className="flex flex-col gap-4 w-1/3 sm:w-1/4 md:w-1/6 shrink-0"
+                        style={{
+                            animation: `${colIndex % 2 === 0 ? 'marquee-up' : 'marquee-down'} ${40 + (colIndex * 5)}s linear infinite`
+                        }}
+                      >
+                          {/* Render items twice for seamless loop */}
+                          {[...colItems, ...colItems].map((p, i) => (
+                              <div key={i} className="w-full aspect-[4/5] rounded-xl bg-gray-800/50 overflow-hidden border border-white/5 relative">
+                                 <img 
+                                    src={p ? p.imageUrl : `https://picsum.photos/seed/${colIndex * 100 + i}/400/500`} 
+                                    className="w-full h-full object-cover opacity-60 grayscale group-hover:grayscale-0 transition-all duration-700 ease-out" 
+                                    loading="lazy"
+                                    alt=""
+                                 />
+                              </div>
+                          ))}
                       </div>
                   ))}
               </div>
