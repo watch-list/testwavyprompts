@@ -10,6 +10,18 @@
     
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
+      
+      // --- SAFE STORAGE WRAPPER (Fixes AI Studio Crash) ---
+      const SafeStorage = {
+        getItem: (key) => {
+          try { return localStorage.getItem(key); } 
+          catch (e) { console.warn('Storage access blocked'); return null; }
+        },
+        setItem: (key, val) => {
+          try { localStorage.setItem(key, val); } 
+          catch (e) { console.warn('Storage access blocked'); }
+        }
+      };
     </script>
 
     <script>
@@ -37,55 +49,39 @@
       }
 
       html {
-        scroll-behavior: auto; /* Let Lenis handle scrolling */
+        scroll-behavior: auto;
         height: 100%;
       }
 
       body {
         font-family: 'Poppins', sans-serif;
-        background-color: #020202; /* Darker background */
+        background-color: #020202;
         color: #ffffff;
         font-weight: 400;
         margin: 0;
         overflow-x: hidden;
         min-height: 100vh;
-        /* Performance optimization: subpixel antialiasing */
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
 
       /* --- CUSTOM SCROLLBAR UI --- */
-      ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 10px;
         border: 2px solid transparent;
         background-clip: content-box;
       }
-
       ::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.25);
-        border: 2px solid transparent;
-        background-clip: content-box;
       }
-
       ::-webkit-scrollbar-thumb:active {
         background: rgba(255, 255, 255, 0.4);
       }
+      ::-webkit-scrollbar-corner { background: transparent; }
 
-      ::-webkit-scrollbar-corner {
-        background: transparent;
-      }
-
-      /* Firefox Scrollbar Support */
       @supports (scrollbar-color: auto) {
         * {
           scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
@@ -103,7 +99,6 @@
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        /* GPU acceleration hint */
         transform: translateZ(0);
       }
       
@@ -122,27 +117,19 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         transform: translateZ(0);
       }
-
       .glass-element:hover {
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.15);
       }
       
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       
       @keyframes breathe {
         0%, 100% { transform: scale(1.1); opacity: 0.2; }
         50% { transform: scale(1.2); opacity: 0.3; }
       }
-      .animate-breathe {
-        animation: breathe 10s ease-in-out infinite;
-      }
+      .animate-breathe { animation: breathe 10s ease-in-out infinite; }
 
       @keyframes text-reveal {
         0% { opacity: 0; filter: blur(12px); transform: translateY(10px); }
@@ -152,7 +139,6 @@
         animation: text-reveal 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
       }
 
-      /* Marquee Animations with GPU acceleration */
       @keyframes marquee-up {
         0% { transform: translateY(0) translateZ(0); }
         100% { transform: translateY(-50%) translateZ(0); }
@@ -162,144 +148,115 @@
         100% { transform: translateY(0) translateZ(0); }
       }
 
-      /* Performance optimization for marquee */
       .marquee-col {
         will-change: transform;
         backface-visibility: hidden;
       }
+
       /* ===== COMING SOON WALL ===== */
-.coming-wall {
-  position: fixed;
-  inset: 0;
-  background: #020202;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  color: white;
-}
-
-/* Header */
-.cs-header {
-  height: 72px;
-  margin: 16px;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(30px);
-  border: 1px solid rgba(255,255,255,0.08);
-  display: flex;
-  align-items: center;
-  padding: 0 28px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-}
-
-.cs-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: -0.02em;
-}
-
-.cs-brand img {
-  width: 40px;
-  height: 40px;
-}
-
-.cs-brand .blue {
-  color: #547EAE;
-}
-
-/* Center */
-.cs-center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0 6vw;
-}
-
-.cs-center h1 {
-  font-family: 'Milker','Unbounded','Syne',sans-serif;
-  font-size: clamp(3.5rem, 8vw, 6.8rem);
-  line-height: 0.85;
-  letter-spacing: -0.08em;
-  margin: 0;
-  font-weight: 900;
-  text-transform: uppercase;
-  display: flex;
-  flex-direction: column;
-}
-
-
-.cs-center h1 .muted {
-  opacity: 1;
-}
-
-.cs-center p {
-  margin-top: 18px;
-  max-width: 420px;
-  font-size: 14px;
-  opacity: 0.45;
-}
-
-.cs-center .coming {
-  margin-top: 40px;
-  font-size: 11px;
-  letter-spacing: 0.3em;
-  opacity: 0.4;
-}
-
- 
+      .coming-wall {
+        position: fixed;
+        inset: 0;
+        background: #020202;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        color: white;
+      }
+      .cs-header {
+        height: 72px;
+        margin: 16px;
+        border-radius: 999px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(30px);
+        border: 1px solid rgba(255,255,255,0.08);
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      }
+      .cs-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+      .cs-brand img { width: 40px; height: 40px; }
+      .cs-brand .blue { color: #547EAE; }
+      .cs-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 6vw;
+      }
+      .cs-center h1 {
+        font-family: 'Milker','Unbounded','Syne',sans-serif;
+        font-size: clamp(3.5rem, 8vw, 6.8rem);
+        line-height: 0.85;
+        letter-spacing: -0.08em;
+        margin: 0;
+        font-weight: 900;
+        text-transform: uppercase;
+        display: flex;
+        flex-direction: column;
+      }
+      .cs-center p {
+        margin-top: 18px;
+        max-width: 420px;
+        font-size: 14px;
+        opacity: 0.45;
+      }
+      .cs-center .coming {
+        margin-top: 40px;
+        font-size: 11px;
+        letter-spacing: 0.3em;
+        opacity: 0.4;
+      }
     </style>
 
     <script>
-  (function () {
-    const ADMIN_KEY = "wavy_admin";
-    const ADMIN_PASSWORD = "uzair2643";
+      (function () {
+        const ADMIN_KEY = "wavy_admin";
+        const ADMIN_PASSWORD = "uzair2643";
 
-    const params = new URLSearchParams(window.location.search);
-    const adminParam = params.get("admin");
+        const params = new URLSearchParams(window.location.search);
+        const adminParam = params.get("admin");
 
-    if (adminParam && adminParam === ADMIN_PASSWORD) {
-      localStorage.setItem(ADMIN_KEY, "1");
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  })();
-</script>
-
+        if (adminParam && adminParam === ADMIN_PASSWORD) {
+          SafeStorage.setItem(ADMIN_KEY, "1");
+          try {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } catch(e) {}
+        }
+      })();
+    </script>
   </head>
   <body>
 
-    <!-- COMING SOON WALL -->
-  <div id="coming-wall" class="coming-wall" style="display:none;">
-
-    <script>
-  if (localStorage.getItem("wavy_admin") !== "1") {
-    document.getElementById("coming-wall").style.display = "flex";
-  }
-</script>
-
-
-
-    <div class="cs-header">
-      <div class="cs-brand">
-        <img src="./logo.svg" alt="WavyPrompts Logo" />
-        <span>Wavy<span class="blue">Prompts</span></span>
+    <div id="coming-wall" class="coming-wall" style="display:none;">
+      <script>
+        if (SafeStorage.getItem("wavy_admin") !== "1") {
+          document.getElementById("coming-wall").style.display = "flex";
+        }
+      </script>
+      <div class="cs-header">
+        <div class="cs-brand">
+          <img src="./logo.svg" alt="WavyPrompts Logo" />
+          <span>Wavy<span class="blue">Prompts</span></span>
+        </div>
+      </div>
+      <div class="cs-center">
+        <h1>
+          <span>STAY WAVY</span>
+          <span>PROMPT</span>
+          <span>SMARTER</span>
+        </h1>
+        <span class="coming">COMING SOON</span>
       </div>
     </div>
-
-    <div class="cs-center">
-      <h1>
-        <span>STAY WAVY</span>
-        <span>PROMPT</span>
-        <span>SMARTER</span>
-      </h1>
-      
-      <span class="coming">COMING SOON</span>
-    </div>
-
-  </div>
 
     <div id="root"></div>
 
@@ -311,17 +268,14 @@
         MoreHorizontal, Check, Pencil, Search, Sparkles, Loader2, AlertTriangle, Trash2, Upload, Link as LinkIcon, Info, XCircle, CheckCircle2,
         Database, Terminal, Calendar
       } from "https://esm.sh/lucide-react@0.263.1";
-      // Import Lenis (New Package Name)
       import Lenis from "https://esm.sh/lenis@1.1.14";
       import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-      // --- SUPABASE CONFIGURATION ---
       const SUPABASE_URL = 'https://wkxmzwvysahrczxbesgk.supabase.co';
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreG16d3Z5c2FocmN6eGJlc2drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3OTUwMTcsImV4cCI6MjA4MTM3MTAxN30.m7GZaKsWT9KhvAU3dR88cSbVwtK1_FTUM1QL4cf8PN0';
       
       const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      // --- SQL FIX SCRIPT ---
       const REPAIR_SQL = `
 -- 1. RESET PROMPTS TABLE
 create table if not exists public.prompts (
@@ -333,11 +287,9 @@ create table if not exists public.prompts (
     created_at timestamptz default now()
 );
 
--- Ensure columns exist
 alter table public.prompts add column if not exists category text default 'NanoBanana';
 alter table public.prompts add column if not exists created_at timestamptz default now();
 
--- Fix Table Permissions (RLS)
 alter table public.prompts enable row level security;
 drop policy if exists "Enable all access" on public.prompts;
 drop policy if exists "Public Access" on public.prompts;
@@ -345,26 +297,21 @@ create policy "Public Access" on public.prompts for all using (true) with check 
 grant all on table public.prompts to anon;
 grant all on table public.prompts to authenticated;
 
--- 2. FIX STORAGE (Fixes "Permission Denied" errors)
 insert into storage.buckets (id, name, public) values ('images', 'images', true)
 on conflict (id) do update set public = true;
 
--- Remove conflicting policies
 drop policy if exists "Universal Public Images" on storage.objects;
 drop policy if exists "Give me access" on storage.objects;
 drop policy if exists "Public Access" on storage.objects;
 
--- Create UNIVERSAL open policy
 create policy "Universal Public Images" on storage.objects for all 
 using ( bucket_id = 'images' ) 
 with check ( bucket_id = 'images' );
 
--- Explicit grants
 grant all on table storage.objects to anon;
 grant all on table storage.objects to authenticated;
 `.trim();
 
-      // --- TOAST CONTEXT ---
       const ToastContext = createContext(null);
 
       const ToastProvider = ({ children }) => {
@@ -413,7 +360,6 @@ grant all on table storage.objects to authenticated;
         return context;
       };
 
-      // Data Mapping Helpers
       const mapFromDb = (row) => ({
         id: row.id,
         title: row.title,
@@ -432,7 +378,6 @@ grant all on table storage.objects to authenticated;
         created_at: new Date(data.createdAt).toISOString()
       });
 
-      // API Functions
       const fetchPrompts = async () => {
         const { data, error } = await supabase
           .from('prompts')
@@ -463,7 +408,6 @@ grant all on table storage.objects to authenticated;
           .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
         if (uploadError) {
-          console.error("Storage upload error:", uploadError);
           if (uploadError.statusCode === '403' || uploadError.error === 'Unauthorized' || uploadError.message.includes('row-level security')) {
             throw new Error("Storage Permission Denied. Run the repair script.");
           }
@@ -501,8 +445,6 @@ grant all on table storage.objects to authenticated;
         } catch (e) { return null; }
       };
 
-      // Components
-
       const Button = ({ children, variant = 'primary', fullWidth = false, className = '', ...props }) => {
         const baseStyles = "inline-flex items-center justify-center transition-all duration-200 font-medium tracking-wide disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]";
         const variants = {
@@ -517,8 +459,8 @@ grant all on table storage.objects to authenticated;
 
       const HeroSection = ({ prompts }) => {
         const cols = useMemo(() => {
-          const pool = prompts && prompts.length > 0 ? prompts : Array.from({length: 12}).fill(null);
-          const items = [...pool, ...pool, ...pool, ...pool].slice(0, 36); 
+          const pool = prompts && prompts.length > 0 ? prompts : Array.from({length: 8}).fill(null);
+          const items = [...pool, ...pool].slice(0, 18); 
           const result = [[], [], [], [], [], []];
           items.forEach((item, i) => { result[i % 6].push(item); });
           return result;
@@ -526,7 +468,6 @@ grant all on table storage.objects to authenticated;
 
         return (
           <div className="relative w-full h-[400px] md:h-[480px] rounded-[32px] overflow-hidden mb-12 border border-white/10 shadow-2xl bg-[#0a0a0a] group hardware-accelerated">
-              {/* Background Columns - Tilted and Animated */}
               <div className="absolute inset-[-100px] opacity-70 flex gap-4 justify-center items-start transform -rotate-6 scale-110 pointer-events-none select-none">
                   {cols.map((colItems, colIndex) => (
                       <div 
@@ -536,32 +477,27 @@ grant all on table storage.objects to authenticated;
                             animation: `${colIndex % 2 === 0 ? 'marquee-up' : 'marquee-down'} ${40 + (colIndex * 5)}s linear infinite`
                         }}
                       >
-                          {/* Render items twice for seamless loop */}
                           {[...colItems, ...colItems].map((p, i) => (
                               <div key={i} className="w-full aspect-[4/5] rounded-xl bg-gray-800/50 overflow-hidden border border-white/5 relative">
                                  <img 
-                                    src={p ? p.imageUrl : `https://picsum.photos/seed/${colIndex * 100 + i}/400/500`} 
-                                    className="w-full h-full object-cover transition-all duration-700 ease-out" 
-                                    loading="lazy"
-                                    alt=""
+                                   src={p ? p.imageUrl : `https://picsum.photos/seed/${colIndex * 100 + i}/400/500`} 
+                                   className="w-full h-full object-cover transition-all duration-700 ease-out" 
+                                   loading="lazy"
+                                   alt=""
                                  />
                               </div>
                           ))}
                       </div>
                   ))}
               </div>
-
-              {/* Dark Gradient Overlay for Readability */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-              
-              {/* Content - Left Aligned */}
               <div className="absolute inset-0 flex flex-col items-start justify-end z-10 p-8 pb-12 md:pb-16 text-left">
                    <h1 className="font-display font-black text-3xl md:text-5xl tracking-tighter leading-[0.85] text-white drop-shadow-2xl flex flex-col gap-0 md:gap-1">
-                      <span>STAY WAVY</span>
-                      <span className="text-white/90">PROMPT SMARTER</span>
+                     <span>STAY WAVY</span>
+                     <span className="text-white/90">PROMPT SMARTER</span>
                    </h1>
                    <p className="text-white/50 text-[10px] md:text-xs font-medium max-w-xs mt-4 tracking-wide">
-                      Discover and collect the best AI prompts in your personal vault.
+                     Discover and collect the best AI prompts in your personal vault.
                    </p>
               </div>
           </div>
@@ -586,19 +522,16 @@ grant all on table storage.objects to authenticated;
                 <div className="p-3 rounded-full bg-red-500/20 text-red-400"><Database size={24} /></div>
                 <div>
                   <h2 className="text-xl font-bold font-display text-white">Database Setup Required</h2>
-                  <p className="text-red-300 text-sm">Permission or Schema error detected in Supabase</p>
+                  <p className="text-red-300 text-sm">Permission or Schema error detected</p>
                 </div>
               </div>
               
               <div className="bg-black/40 rounded-xl p-4 mb-6 border border-white/10">
-                <p className="text-white/60 text-sm mb-2 font-mono">Error Details:</p>
                 <code className="text-red-300 text-xs break-all">{errorMsg}</code>
               </div>
 
-              <p className="text-white/80 mb-4 text-sm">To fix this, copy the SQL code below and run it in your <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" className="text-[#547EAE] hover:underline font-bold">Supabase SQL Editor</a>.</p>
-              
               <div className="relative group mb-6">
-                <pre className="bg-[#050505] p-4 rounded-xl text-xs text-gray-400 font-mono overflow-x-auto h-48 border border-white/10 shadow-inner">
+                <pre className="bg-[#050505] p-4 rounded-xl text-xs text-gray-400 font-mono overflow-x-auto h-48 border border-white/10">
                   {REPAIR_SQL}
                 </pre>
                 <button onClick={handleCopy} className="absolute top-2 right-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white text-xs font-bold transition-colors flex items-center gap-2 backdrop-blur-md">
@@ -609,7 +542,7 @@ grant all on table storage.objects to authenticated;
 
               <div className="flex justify-end gap-3">
                 <Button variant="ghost" onClick={onClose}>Ignore</Button>
-                <Button onClick={() => window.location.reload()} variant="primary">I've Run It, Reload App</Button>
+                <Button onClick={() => window.location.reload()} variant="primary">Reload App</Button>
               </div>
             </div>
           </div>
@@ -751,7 +684,6 @@ grant all on table storage.objects to authenticated;
             <div data-lenis-prevent className="glass-panel w-full md:max-w-lg max-h-[95vh] md:max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-3xl p-6 md:p-8 relative animate-in slide-in-from-bottom-full md:slide-in-from-bottom-10 fade-in zoom-in-95 duration-300">
               <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors z-10"><X size={24} /></button>
               
-              {/* Mobile Drag Handle */}
               <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 md:hidden"></div>
 
               <h2 className="text-xl md:text-2xl font-bold font-display mb-6 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">{initialData ? 'Edit Prompt' : 'Add to Vault'}</h2>
@@ -774,9 +706,9 @@ grant all on table storage.objects to authenticated;
                   <div className="flex gap-2 mb-2"><button type="button" onClick={() => setImageMode('upload')} className={`text-xs font-bold px-3 py-1.5 rounded-lg ${imageMode === 'upload' ? 'bg-[#547EAE] text-white' : 'text-white/50'}`}>Upload</button><button type="button" onClick={() => setImageMode('link')} className={`text-xs font-bold px-3 py-1.5 rounded-lg ${imageMode === 'link' ? 'bg-[#547EAE] text-white' : 'text-white/50'}`}>URL</button></div>
                   {imageMode === 'upload' ? (
                      <div onClick={() => fileInputRef.current?.click()} className="group relative w-full aspect-[4/5] max-h-[200px] rounded-xl border-2 border-dashed border-white/10 hover:border-[#547EAE]/50 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden active:scale-[0.99] transition-transform">
-                      {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover opacity-60" /> : <div className="flex flex-col items-center"><Upload size={24} /><span className="text-xs font-bold mt-2">Click to Upload</span></div>}
-                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                     </div>
+                       {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover opacity-60" /> : <div className="flex flex-col items-center"><Upload size={24} /><span className="text-xs font-bold mt-2">Click to Upload</span></div>}
+                       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                      </div>
                   ) : (
                     <input type="url" value={imageUrl} onChange={(e) => { setImageUrl(e.target.value); setPreviewUrl(e.target.value); }} placeholder="https://..." className="glass-input w-full rounded-xl px-4 py-3 text-[16px] md:text-sm" />
                   )}
@@ -806,7 +738,7 @@ grant all on table storage.objects to authenticated;
         );
       };
 
-      const FullView = ({ data, isOwner, onBack, onEdit }) => {
+      const FullView = ({ data, isOwner, onBack, onEdit, showBack = true }) => {
         const [copied, setCopied] = useState(false);
         const { addToast } = useToast();
 
@@ -828,15 +760,16 @@ grant all on table storage.objects to authenticated;
 
         return (
           <div data-lenis-prevent className="fixed inset-0 z-[100] bg-black text-white overflow-y-auto">
-             
-             {/* Floating Controls */}
              <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 md:p-6 pointer-events-none pt-[calc(1rem+env(safe-area-inset-top))]">
-                <button 
-                  onClick={onBack} 
-                  className="pointer-events-auto p-3 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 hover:bg-black/60 transition-all active:scale-90 shadow-2xl"
-                >
-                  <ChevronLeft size={24} />
-                </button>
+                
+                {showBack ? (
+                  <button 
+                    onClick={onBack} 
+                    className="pointer-events-auto p-3 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 hover:bg-black/60 transition-all active:scale-90 shadow-2xl"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                ) : <div></div>}
                 
                 {isOwner && (
                   <button 
@@ -849,26 +782,17 @@ grant all on table storage.objects to authenticated;
              </div>
 
              <div className="max-w-xl mx-auto px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-20 md:pt-24 flex flex-col items-center w-full">
-                
-                {/* Main Image */}
                 <div className="relative w-full aspect-[4/5] rounded-[24px] md:rounded-[32px] overflow-hidden bg-[#111] border border-white/10 shadow-2xl mb-6 md:mb-8">
                   <img src={data.imageUrl} className="w-full h-full object-cover" />
                 </div>
-
-                {/* Content Container */}
                 <div className="w-full flex flex-col gap-4 md:gap-5 px-1 min-w-0">
-                   {/* Title */}
                    <h1 className="text-2xl md:text-4xl font-black font-display text-white leading-tight tracking-tight text-left break-all">{data.title}</h1>
-                   
-                   {/* Meta Tags */}
                    <div className="flex wrap items-center gap-3">
                       <div className="glass-element flex items-center gap-2 px-3 py-2 rounded-full border border-white/10">
-                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getDotColor(data.category || 'NanoBanana')}`}></div>
-                         <span className="text-xs font-bold uppercase tracking-widest text-white/90 font-display whitespace-nowrap">{data.category || 'NanoBanana'}</span>
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getDotColor(data.category || 'NanoBanana')}`}></div>
+                          <span className="text-xs font-bold uppercase tracking-widest text-white/90 font-display whitespace-nowrap">{data.category || 'NanoBanana'}</span>
                       </div>
                    </div>
-
-                   {/* Prompt Box */}
                    <div className="w-full bg-[#161616] border border-white/10 rounded-2xl p-5 md:p-6 mt-2 relative min-w-0 overflow-hidden">
                       <p className="text-sm md:text-base text-gray-300 font-medium leading-relaxed whitespace-pre-wrap select-text break-all">
                         {data.prompt}
@@ -877,7 +801,6 @@ grant all on table storage.objects to authenticated;
                 </div>
              </div>
 
-             {/* Sticky Action Footer */}
              <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black via-black to-transparent z-50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <div className="max-w-xl mx-auto flex gap-4">
                    <Button onClick={handleCopy} fullWidth variant="primary" className="h-14 text-base font-bold shadow-lg shadow-[#547EAE]/30 rounded-full hover:scale-[1.02] active:scale-95 transition-transform">
@@ -898,7 +821,6 @@ grant all on table storage.objects to authenticated;
       };
 
       const MainApp = () => {
-        // Initialize state based on URL hash to prevent flash of homepage
         const [sharedData, setSharedData] = useState(() => {
           const hash = window.location.hash;
           if (hash.startsWith('#/share/')) {
@@ -924,13 +846,11 @@ grant all on table storage.objects to authenticated;
         const [isAddModalOpen, setIsAddModalOpen] = useState(false);
         const [editingPrompt, setEditingPrompt] = useState(null);
         
-        // Navigation State
         const [activeCategory, setActiveCategory] = useState('All');
         const [searchQuery, setSearchQuery] = useState('');
         
         const { addToast } = useToast();
 
-        // Theme Configuration - Seedream removed, CHATGPT updated
         const themeColors = useMemo(() => ({
           'All': '#547EAE', 
           'NanoBanana': '#FFD700', 
@@ -951,7 +871,7 @@ grant all on table storage.objects to authenticated;
               setPrompts(data);
               checkHash(data);
             } catch (err) {
-              if (health.healthy) setError(err.message);
+               if (health.healthy) setError(err.message);
             } finally {
               setLoading(false);
             }
@@ -971,7 +891,6 @@ grant all on table storage.objects to authenticated;
 
           init();
 
-          // Smooth Scroll
           const lenis = new Lenis({ duration: 1.2, smoothWheel: true });
           function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
           requestAnimationFrame(raf);
@@ -982,8 +901,8 @@ grant all on table storage.objects to authenticated;
           try {
             let finalImageUrl = promptData.imageUrl;
             if (imageFile) {
-                 if (onStatusUpdate) onStatusUpdate('uploading');
-                 finalImageUrl = await uploadImageToSupabase(imageFile);
+                  if (onStatusUpdate) onStatusUpdate('uploading');
+                  finalImageUrl = await uploadImageToSupabase(imageFile);
             }
             if (onStatusUpdate) onStatusUpdate('saving');
             await savePromptToSupabase({ ...promptData, imageUrl: finalImageUrl });
@@ -1016,28 +935,42 @@ grant all on table storage.objects to authenticated;
           <div className="min-h-screen relative text-white selection:text-white">
             <style>{`::selection { background-color: ${currentTheme}; color: black; }`}</style>
 
-            {/* Database Repair Modal */}
             <RepairModal isOpen={!!dbError} onClose={() => setDbError(null)} errorMsg={dbError} />
 
-            {/* Dynamic Background with Theme Color - GPU Optimized */}
             <div className="fixed inset-0 z-[-1] bg-[#020202] transition-colors duration-700 pointer-events-none">
               <div 
-                   className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out will-change-[background-color,opacity]" 
-                   style={{ backgroundColor: currentTheme, opacity: 0.04, transform: 'translateZ(0)' }}
+                    className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out will-change-[background-color,opacity]" 
+                    style={{ backgroundColor: currentTheme, opacity: 0.04, transform: 'translateZ(0)' }}
               />
               <div 
-                   className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out will-change-[background-color,opacity]" 
-                   style={{ backgroundColor: currentTheme, opacity: 0.02, transform: 'translateZ(0)' }}
+                    className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] blur-[120px] transition-all duration-1000 ease-in-out will-change-[background-color,opacity]" 
+                    style={{ backgroundColor: currentTheme, opacity: 0.02, transform: 'translateZ(0)' }}
               />
             </div>
 
-            {view === 'shared' && sharedData ? <FullView data={sharedData} isOwner={false} onBack={() => { window.location.hash = ''; setView('gallery'); }} /> : 
-              view === 'full' && selectedPrompt ? <><FullView data={selectedPrompt} isOwner={true} onBack={() => {window.location.hash=''; setView('gallery');}} onEdit={() => { setEditingPrompt(selectedPrompt); setIsAddModalOpen(true); }} /><AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} /></> : (
+            {view === 'shared' && sharedData ? 
+              <FullView 
+                data={sharedData} 
+                isOwner={false} 
+                showBack={false} 
+                onBack={() => { window.location.hash = ''; setView('gallery'); }} 
+              /> 
+            : view === 'full' && selectedPrompt ? 
+              <>
+                <FullView 
+                  data={selectedPrompt} 
+                  isOwner={true} 
+                  showBack={true}
+                  onBack={() => {window.location.hash=''; setView('gallery');}} 
+                  onEdit={() => { setEditingPrompt(selectedPrompt); setIsAddModalOpen(true); }} 
+                />
+                <AddModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSave} onDelete={handleDelete} initialData={editingPrompt} />
+              </> 
+            : (
               <>
                 <header className="fixed top-0 left-0 right-0 z-40 flex justify-center pointer-events-none px-4 pt-[calc(1rem+env(safe-area-inset-top))] md:pt-6">
                   <div className="pointer-events-auto w-full max-w-6xl bg-black/40 backdrop-blur-[32px] saturate-150 border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)] rounded-full py-3 px-2 pl-3 md:pl-4 pr-2 md:pr-2 flex items-center justify-between transition-all duration-500 hover:bg-black/60 hover:border-white/20 ring-1 ring-white/5 group">
                     
-                    {/* Left: Logo */}
                     <div className="flex-1 flex items-center justify-start gap-3 md:gap-4 min-w-0">
                       <img src="./logo.svg" alt="Logo" className="w-10 h-10 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg" />
                       <h1 className="hidden lg:block text-xl md:text-2xl font-extrabold tracking-tighter text-white truncate" style={{ fontFamily: 'Unbounded, sans-serif' }}>
@@ -1045,7 +978,6 @@ grant all on table storage.objects to authenticated;
                       </h1>
                     </div>
 
-                    {/* Center: Navigation - Removed Seedream */}
                     <nav className="flex justify-center items-center overflow-hidden mx-2 md:mx-4 shrink-0">
                       <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar mask-fade px-2 py-1">
                         {[
@@ -1069,7 +1001,6 @@ grant all on table storage.objects to authenticated;
                       </div>
                     </nav>
 
-                    {/* Right: Add Button */}
                     <div className="flex-1 flex items-center justify-end min-w-0">
                       <button onClick={() => { setEditingPrompt(null); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-5 py-3 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-[#547EAE] hover:text-white transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] active:scale-95 active:bg-[#547EAE] active:text-white whitespace-nowrap">
                         <Plus size={16} strokeWidth={3} />
@@ -1083,7 +1014,6 @@ grant all on table storage.objects to authenticated;
                 <main className="pt-24 md:pt-28 pb-20 px-4 md:px-6 z-10 relative max-w-7xl mx-auto">
                   <HeroSection prompts={prompts} />
 
-                  {/* Search Bar */}
                   <div className="mb-8 md:mb-10 max-w-2xl mx-auto w-full">
                     <div className="relative w-full group">
                       <Search size={16} className="absolute left-4 top-3 text-white/30" />
@@ -1140,28 +1070,22 @@ grant all on table storage.objects to authenticated;
       root.render(<App />);
     </script>
     <script>
-  (function () {
-    const wall = document.getElementById("coming-wall");
-
-    function updateWall() {
-      const isAdmin = localStorage.getItem("wavy_admin") === "1";
-      const hash = window.location.hash || "";
-      const isSharedLink = hash.startsWith("#/share/");
-
-      if (isAdmin || isSharedLink) {
-        wall.style.display = "none";
-      } else {
-        wall.style.display = "flex";
-      }
-    }
-
-    // Run immediately
-    updateWall();
-
-    // Run again whenever hash changes (CRITICAL)
-    window.addEventListener("hashchange", updateWall);
-  })();
-</script>
-
+      (function () {
+        const wall = document.getElementById("coming-wall");
+        function updateWall() {
+          // SAFE STORAGE WRAPPER
+          const isAdmin = SafeStorage.getItem("wavy_admin") === "1";
+          const hash = window.location.hash || "";
+          const isSharedLink = hash.startsWith("#/share/");
+          if (isAdmin || isSharedLink) {
+            wall.style.display = "none";
+          } else {
+            wall.style.display = "flex";
+          }
+        }
+        updateWall();
+        window.addEventListener("hashchange", updateWall);
+      })();
+    </script>
   </body>
 </html>
